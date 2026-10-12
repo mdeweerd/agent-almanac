@@ -20,10 +20,13 @@
 #     wrong reason — and a survivor scrolling past in a wall of output is a finding nobody reads.
 #   - The separator trap, refused up front: `mutation-check --replace` splits on the FIRST `::`.
 #     When `::` occurs exactly once in a row's `<old>::<new>` field, that split is the only one.
-#     When it occurs more than once — apart, or overlapping as a run of three colons — the split
-#     the checker takes may not be the one the plan meant, and the checker would apply it without
-#     a word (#783). Such a row is refused by name. Single colons are not the separator: an OLD
-#     such as `write(dir, { 'a.md': '# a\n', 'b.md': '# b\n' });` is measured like any other.
+#     When it occurs more than once, the split the checker takes may not be the one the plan
+#     meant. Since #950 the checker itself refuses a run of three colons and an empty <old>, but
+#     two `::` apart (`a::b::c`) it still splits at the first without a warning, so this envelope
+#     refuses every row holding `::` more than once by name, the run of three included (an empty
+#     <old> it passes to the checker, which refuses it; #947). Single colons are not the
+#     separator: an OLD such as `write(dir, { 'a.md': '# a\n', 'b.md': '# b\n' });` is measured
+#     like any other.
 #     Until #903 this guard cut the field at the first `::` and then looked for `::` in what was
 #     left, which the cut had already removed, so it never fired on the case it was written for,
 #     and it refused any OLD holding two single colons. Rows are read from the plan as TAB-separated
@@ -48,8 +51,10 @@
 #   --plan FILE   the mutants, one per line: <id><TAB><file><TAB><old>::<new>
 #                 read once, so a pipe works and an edit made during the run is not seen;
 #                 blank lines and lines starting with `#` are ignored; `::` must occur exactly
-#                 once in the last field, so an OLD ending in `:` or holding `::` cannot be
-#                 expressed until #783 gives the checker a way to say it
+#                 once in the last field, so an OLD ending in `:` or holding `::`, or a NEW
+#                 starting with `:` or holding `::`, cannot be planned here: the checker takes
+#                 such a mutant as --from <old> --to <new> since #950, and this envelope does
+#                 not pass those flags (#957)
 #   --out DIR     where the per-row logs land (default: a fresh mktemp -d, printed at the end)
 #
 # Exit 0 when every row is `MUTANT KILLED`. Exit 1 when any row survives, is SUSPECT, INVALID or
@@ -70,9 +75,10 @@ REPO=$(cd "$(dirname "$SELF")/.." && pwd)
 CHECKER="$REPO/scripts/mutation-check.js"
 
 # The separator, held in a variable so that no line of the plan check spells it out. A mutant of
-# that check has to be written as `mutation-check --replace <old>::<new>`, and a needle holding
-# `::` is exactly the ambiguity the check refuses: spelling it inline would make the guard
-# impossible to mutate with the tool that proves it (#783, one level down).
+# that check measured through this envelope is a `--replace <old>::<new>` row, and a needle
+# holding `::` is exactly the ambiguity the check refuses: spelling it inline would make the
+# guard impossible to mutate through the envelope (#783, one level down). The checker's own
+# --from/--to (#950) can carry such a needle when it is driven directly.
 SEP='::'
 
 # Prints why a plan row is refused, or nothing when it may be measured.
@@ -87,13 +93,14 @@ row_problem() {
     return ;;
   esac
   # `mutation-check --replace` splits at the FIRST separator. With one occurrence that is the
-  # only split there is. With two, apart or overlapping as a run of three colons, it may not be
-  # the split the plan meant, and the checker applies it without a word (#783). The test reads
-  # the WHOLE field: until #903 it cut the field at the first separator and then looked for one
-  # in what was left, which the cut had already removed, so it could never fire, and its pattern
-  # (any two single colons) refused OLD text that held no separator at all.
+  # only split there is. With two apart, it may not be the split the plan meant, and the
+  # checker applies it without a warning; a run of three colons the checker refuses itself since
+  # #950. This check refuses both before anything is measured. The test reads the WHOLE field:
+  # until #903 it cut the field at the first separator and then looked for one in what was
+  # left, which the cut had already removed, so it could never fire, and its pattern (any two
+  # single colons) refused OLD text that held no separator at all.
   case "$mutation" in *"$SEP"*"$SEP"*|*"$SEP":*)
-    printf "'%s' occurs more than once in its <old>%s<new> field (a run of three colons counts); mutation-check splits at the first one, which may not be the split the plan meant (#783)" "$SEP" "$SEP"
+    printf "'%s' occurs more than once in its <old>%s<new> field (a run of three colons counts); mutation-check --replace refuses a run of three, and splits a value with two '%s' apart at the first one, which may not be the split the plan meant; run node scripts/mutation-check.js directly with --from <old> --to <new>, which this envelope cannot pass (#957)" "$SEP" "$SEP" "$SEP"
     return ;;
   esac
 }
