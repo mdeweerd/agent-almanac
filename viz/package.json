@@ -20,7 +20,7 @@
     "3d-force-graph": "^1",
     "d3": "^7",
     "force-graph": "^1.51.4",
-    "mermaid": "^12.0.0",
+    "mermaid": "^12.1.0",
     "three": "^0.186.0"
   },
   "devDependencies": {
@@ -29,8 +29,8 @@
     "vite": "^8",
     "vitest": "^5.0.1"
   },
-  "//": "overrides.lodash-es: mermaid 12.0.0 depends on chevrotain ~11.1.2, which pins lodash-es to exactly 4.17.23 (GHSA-r5fr-rjxr-66jc, GHSA-f23m-r3pf-42rh). Drop the override once mermaid depends on chevrotain >=12, which has no lodash-es dependency.",
+  "//": "overrides.katex: mermaid 12.1.0 depends on katex ^0.16.47, and katex from 0.11.0 up to (not including) 0.18.2 carries GHSA-238p-pmpm-9mq7. mermaid moved to katex ^0.18.0 on its develop branch with no source change (mermaid-js/mermaid@6538fde92b, 2026-10-09). While the override stays, it also forces katex 0.18.x on a mermaid that asks for 0.19 or later, and npm says nothing. Drop it once a released mermaid declares a katex range that admits 0.18.2 or later (develop's ^0.18.0 does), then check that npm install still resolves katex 0.18.2 or later.",
   "overrides": {
-    "lodash-es": "^4.18.1"
+    "katex": "^0.18.2"
   }
 }
