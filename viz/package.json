@@ -29,7 +29,7 @@
     "vite": "^8",
     "vitest": "^5.0.1"
   },
-  "//": "overrides.katex: mermaid 12.1.0 depends on katex ^0.16.47, and every katex below 0.18.2 carries GHSA-238p-pmpm-9mq7. mermaid moved to katex ^0.18.0 on its develop branch with no source change (mermaid-js/mermaid@6538fde92b, 2026-10-09). Drop the override once a released mermaid depends on katex >=0.18.2.",
+  "//": "overrides.katex: mermaid 12.1.0 depends on katex ^0.16.47, and katex from 0.11.0 up to (not including) 0.18.2 carries GHSA-238p-pmpm-9mq7. mermaid moved to katex ^0.18.0 on its develop branch with no source change (mermaid-js/mermaid@6538fde92b, 2026-10-09). While the override stays, it also forces katex 0.18.x on a mermaid that asks for 0.19 or later, and npm says nothing. Drop it once a released mermaid declares a katex range that admits 0.18.2 or later (develop's ^0.18.0 does), then check that npm install still resolves katex 0.18.2 or later.",
   "overrides": {
     "katex": "^0.18.2"
   }
