@@ -23,7 +23,8 @@
 #     When it occurs more than once, the split the checker takes may not be the one the plan
 #     meant. Since #950 the checker itself refuses a run of three colons and an empty <old>, but
 #     two `::` apart (`a::b::c`) it still splits at the first without a warning, so this envelope
-#     refuses every such row by name, the run of three included. Single colons are not the
+#     refuses every row holding `::` more than once by name, the run of three included (an empty
+#     <old> it passes to the checker, which refuses it; #947). Single colons are not the
 #     separator: an OLD such as `write(dir, { 'a.md': '# a\n', 'b.md': '# b\n' });` is measured
 #     like any other.
 #     Until #903 this guard cut the field at the first `::` and then looked for `::` in what was
@@ -99,7 +100,7 @@ row_problem() {
   # left, which the cut had already removed, so it could never fire, and its pattern (any two
   # single colons) refused OLD text that held no separator at all.
   case "$mutation" in *"$SEP"*"$SEP"*|*"$SEP":*)
-    printf "'%s' occurs more than once in its <old>%s<new> field (a run of three colons counts); mutation-check --replace refuses a run of three, and splits a value with two '%s' apart at the first one, which may not be the split the plan meant; run scripts/mutation-check.js directly with --from <old> --to <new>, which this envelope cannot pass (#957)" "$SEP" "$SEP" "$SEP"
+    printf "'%s' occurs more than once in its <old>%s<new> field (a run of three colons counts); mutation-check --replace refuses a run of three, and splits a value with two '%s' apart at the first one, which may not be the split the plan meant; run node scripts/mutation-check.js directly with --from <old> --to <new>, which this envelope cannot pass (#957)" "$SEP" "$SEP" "$SEP"
     return ;;
   esac
 }
