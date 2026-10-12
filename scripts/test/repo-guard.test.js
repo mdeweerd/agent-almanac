@@ -428,6 +428,92 @@ test('detects an untracked file swapped for a symlink to IDENTICAL bytes (#921)'
   assert.ok(listing.stdout.includes(` notes.md -> ${target}`), `the advised ls shows the link:\n${listing.stdout}`);
 });
 
+/**
+ * An untracked `name` holding `my notes`, snapshotted, then swapped for a link to identical bytes
+ * outside the repository: the #921 shape, with the name the caller needs.
+ */
+function swapForLink(t, name) {
+  const dir = makeRepo(t);
+  writeFileSync(join(dir, name), 'my notes\n', 'utf8');
+  const target = outsideFile(t, 'target.md', 'my notes\n');
+  guard(dir, ['snapshot']);
+
+  const statusBefore = git(dir, ['status', '--porcelain']);
+  rmSync(join(dir, name));
+  symlinkSync(target, join(dir, name));
+  assert.equal(git(dir, ['status', '--porcelain']), statusBefore,
+    'precondition: the status line is unchanged');
+  // The guard reads `-uall -z` (scripts/repo-guard.js), and `-z` never quotes, so the name it
+  // records is this one byte for byte. Plain `--porcelain` would show it in double quotes, because
+  // of the space. `-uall` is read here too: without it, a `status.showUntrackedFiles=no` in the
+  // caller's git config would hide the file from this line while the guard still saw it.
+  assert.equal(git(dir, ['status', '--porcelain', '-uall', '-z']), `?? ${name}\0`,
+    'precondition: the guard is handed the name unquoted');
+  return { dir, target };
+}
+
+/**
+ * The environment a pasted line runs in. GNU `ls` quotes a name like these when QUOTING_STYLE asks
+ * it to (`shell`, `escape`, ...), and the tests match the name unquoted, so a caller who exports
+ * that variable would see both go red. `literal` is what GNU `ls` uses when QUOTING_STYLE is unset
+ * and stdout is a pipe, which is how spawnSync runs it. PATH and the rest are kept.
+ */
+const PASTE_ENV = { ...process.env, QUOTING_STYLE: 'literal' };
+
+/** The line printed under the kind-command lead, as a reader copies it to paste. */
+function advisedKindLine(stderr) {
+  const lines = stderr.split('\n');
+  const lead = lines.findIndex((line) => line.endsWith('a file type or link target (run at the repository root):'));
+  assert.ok(lead !== -1 && lead + 1 < lines.length, `no kind-command line in:\n${stderr}`);
+  return lines[lead + 1].trim();
+}
+
+test('the ls -ld advice quotes a path the shell would read as code, in verify and in rebaseline (#956)', async (t) => {
+  // Every other kind-change path here (`notes.md`, `d/f`) is in shellWord's safe set, so printing
+  // the names bare survived `npm run test:scripts` (#956, part 4). This name needs the quotes, for
+  // the space and the `$(...)`, and the `'\''` escape, for its own `'`. The expected line is
+  // written out rather than built with shellWord, so a defect there cannot hide in the expectation.
+  const name = "it's $(touch PWNED) notes.md";
+  const quoted = "'it'\\''s $(touch PWNED) notes.md'";
+  const { dir, target } = swapForLink(t, name);
+
+  const r = guard(dir, ['verify']);
+
+  assert.equal(r.status, 1, `a file swapped for a link verified as unchanged:\n${r.stdout}${r.stderr}`);
+  assertKindChanged(r, name, 'a regular file', `a symlink to ${target}`);
+  assert.ok(r.stderr.includes(KIND_COMMAND('  ', quoted)), `verify quotes the path:\n${r.stderr}`);
+  const refusal = guard(dir, ['rebaseline']);
+  assert.equal(refusal.status, 1, `rebaseline refuses a worktree move:\n${refusal.stderr}`);
+  assert.ok(refusal.stderr.includes(KIND_COMMAND('  ', quoted)), `rebaseline quotes the path:\n${refusal.stderr}`);
+  // The line as written is what the shell needs: pasted, it lists the link and runs nothing.
+  const pasted = spawnSync('sh', ['-c', advisedKindLine(r.stderr)], { cwd: dir, encoding: 'utf8', env: PASTE_ENV });
+  assert.equal(pasted.status, 0, `the advised line fails when pasted:\n${pasted.stderr}`);
+  assert.ok(pasted.stdout.includes(`${name} -> ${target}`), `the advised ls shows the link:\n${pasted.stdout}`);
+  assert.ok(!existsSync(join(dir, 'PWNED')), 'pasting the advised line ran the path as code');
+});
+
+test('pasting the ls -ld advice lists the link and runs nothing the path names (#956)', async (t) => {
+  // The issue's path. With no `'` in it, the bare line still parses, so a pasted regression runs
+  // `touch` instead of failing on an unterminated quote; the name with a `'` above could not show
+  // that. So the file `touch` would create is checked first, before the exit code and the line.
+  const name = 'my $(touch PWNED) notes.md';
+  const { dir, target } = swapForLink(t, name);
+
+  const verify = guard(dir, ['verify']);
+  const refusal = guard(dir, ['rebaseline']);
+
+  assert.equal(verify.status, 1, `a file swapped for a link verified as unchanged:\n${verify.stdout}${verify.stderr}`);
+  assert.equal(refusal.status, 1, `rebaseline refuses a worktree move:\n${refusal.stderr}`);
+  for (const [who, stderr] of [['verify', verify.stderr], ['rebaseline', refusal.stderr]]) {
+    const line = advisedKindLine(stderr);
+    const pasted = spawnSync('sh', ['-c', line], { cwd: dir, encoding: 'utf8', env: PASTE_ENV });
+    assert.ok(!existsSync(join(dir, 'PWNED')), `pasting ${who}'s advice ran the path as code: ${line}`);
+    assert.equal(pasted.status, 0, `pasting ${who}'s advice failed:\n${pasted.stderr}`);
+    assert.ok(pasted.stdout.includes(`${name} -> ${target}`), `${who}'s advised ls shows the link:\n${pasted.stdout}`);
+    assert.equal(line, "ls -ld -- 'my $(touch PWNED) notes.md'", `${who} prints the line quoted`);
+  }
+});
+
 test('an untracked symlink is recorded by the target it names, and a retarget is detected (#921)', async (t) => {
   // Two targets holding the same bytes, so only the target string differs.
   const dir = makeRepo(t);
