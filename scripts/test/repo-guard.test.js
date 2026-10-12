@@ -443,12 +443,22 @@ function swapForLink(t, name) {
   symlinkSync(target, join(dir, name));
   assert.equal(git(dir, ['status', '--porcelain']), statusBefore,
     'precondition: the status line is unchanged');
-  // The guard reads `-z`, which never quotes, so the name it records is this one byte for byte.
-  // Plain `--porcelain` would show it in double quotes, because of the space.
-  assert.equal(git(dir, ['status', '--porcelain', '-z']), `?? ${name}\0`,
+  // The guard reads `-uall -z` (scripts/repo-guard.js), and `-z` never quotes, so the name it
+  // records is this one byte for byte. Plain `--porcelain` would show it in double quotes, because
+  // of the space. `-uall` is read here too: without it, a `status.showUntrackedFiles=no` in the
+  // caller's git config would hide the file from this line while the guard still saw it.
+  assert.equal(git(dir, ['status', '--porcelain', '-uall', '-z']), `?? ${name}\0`,
     'precondition: the guard is handed the name unquoted');
   return { dir, target };
 }
+
+/**
+ * The environment a pasted line runs in. GNU `ls` quotes a name like these when QUOTING_STYLE asks
+ * it to (`shell`, `escape`, ...), and the tests match the name unquoted, so a caller who exports
+ * that variable would see both go red. `literal` is what GNU `ls` uses when QUOTING_STYLE is unset
+ * and stdout is a pipe, which is how spawnSync runs it. PATH and the rest are kept.
+ */
+const PASTE_ENV = { ...process.env, QUOTING_STYLE: 'literal' };
 
 /** The line printed under the kind-command lead, as a reader copies it to paste. */
 function advisedKindLine(stderr) {
@@ -476,7 +486,7 @@ test('the ls -ld advice quotes a path the shell would read as code, in verify an
   assert.equal(refusal.status, 1, `rebaseline refuses a worktree move:\n${refusal.stderr}`);
   assert.ok(refusal.stderr.includes(KIND_COMMAND('  ', quoted)), `rebaseline quotes the path:\n${refusal.stderr}`);
   // The line as written is what the shell needs: pasted, it lists the link and runs nothing.
-  const pasted = spawnSync('sh', ['-c', advisedKindLine(r.stderr)], { cwd: dir, encoding: 'utf8' });
+  const pasted = spawnSync('sh', ['-c', advisedKindLine(r.stderr)], { cwd: dir, encoding: 'utf8', env: PASTE_ENV });
   assert.equal(pasted.status, 0, `the advised line fails when pasted:\n${pasted.stderr}`);
   assert.ok(pasted.stdout.includes(`${name} -> ${target}`), `the advised ls shows the link:\n${pasted.stdout}`);
   assert.ok(!existsSync(join(dir, 'PWNED')), 'pasting the advised line ran the path as code');
@@ -496,7 +506,7 @@ test('pasting the ls -ld advice lists the link and runs nothing the path names (
   assert.equal(refusal.status, 1, `rebaseline refuses a worktree move:\n${refusal.stderr}`);
   for (const [who, stderr] of [['verify', verify.stderr], ['rebaseline', refusal.stderr]]) {
     const line = advisedKindLine(stderr);
-    const pasted = spawnSync('sh', ['-c', line], { cwd: dir, encoding: 'utf8' });
+    const pasted = spawnSync('sh', ['-c', line], { cwd: dir, encoding: 'utf8', env: PASTE_ENV });
     assert.ok(!existsSync(join(dir, 'PWNED')), `pasting ${who}'s advice ran the path as code: ${line}`);
     assert.equal(pasted.status, 0, `pasting ${who}'s advice failed:\n${pasted.stderr}`);
     assert.ok(pasted.stdout.includes(`${name} -> ${target}`), `${who}'s advised ls shows the link:\n${pasted.stdout}`);
