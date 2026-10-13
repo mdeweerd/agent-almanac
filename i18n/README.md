@@ -147,6 +147,17 @@ it unchanged — the tool copies the six fields verbatim — so a refreshed stub
 mechanically refreshed"; it is not a translation event, and no human date exists to write. The
 field moves when a person translates the file and replaces `translator`.
 
+On a translated mirror, one whose `translator` is not the scaffold value, the same pairing means
+something else: a **partial retranslation**. An English change was carried into the existing
+translation by hand, which is a translation event. The maintainer's rule for that case
+(2026-10-01, recorded in #933) moves `source_commit` to the English revision the change was
+translated against and keeps `version` in step with English. It leaves `translator` and
+`translation_date` as they were, so both still name the original translation. `fence_basis_commit`
+follows its own rule, above. So read `translator` before reading the pairing: the scaffold value
+means "scaffolded, then mechanically refreshed", and any other value means "translated, then
+partly retranslated against `source_commit`". #933 (for #919) and #937 (for #900) are the first
+two such updates.
+
 With one field the two are irreconcilable: after a mechanical fence repair, bumping it makes the
 first claim false and leaving it makes the second false. So there are two.
 
