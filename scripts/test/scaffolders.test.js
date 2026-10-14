@@ -229,6 +229,29 @@ test('bulk-scaffold-caveman.sh refuses and removes a target the fence-parity che
   }
 });
 
+test('bulk-scaffold-caveman.sh treats a parity check that could not measure (exit 2) as a refusal, not a pass', (t) => {
+  const dir = fixture(t, ['demo']);
+  // Point the fixture copy's check at an id nothing carries: the checker refuses the scope with
+  // exit 2 ("matched no translated content"), the shape of a check that compared nothing.
+  inject(dir, 'bulk-scaffold-caveman.sh', '--id "$skill"', '--id "$skill-absent"');
+  const r = run(dir, 'bulk-scaffold-caveman.sh');
+  assert.notEqual(r.status, 0, `a guard that cannot measure must not pass; output was:\n${r.out}`);
+  for (const tier of TIERS) {
+    const rel = `i18n/${tier}/skills/demo/SKILL.md`;
+    assert.match(r.out, new RegExp(`REFUSED[^\\n]*${escapeRe(rel)}[^\\n]*exit 2`), `${rel} is refused on exit 2`);
+    assert.equal(existsSync(join(dir, rel)), false, `${rel} is removed`);
+  }
+});
+
+test('translate-content.sh treats a parity check that could not measure (exit 2) as a refusal, not a pass', (t) => {
+  const dir = fixture(t, ['demo']);
+  inject(dir, 'translate-content.sh', '--id "$ID"', '--id "$ID-absent"');
+  const r = run(dir, 'translate-content.sh', ['skills', 'demo', 'de']);
+  assert.equal(r.status, 1, `a guard that cannot measure must not pass; output was:\n${r.out}`);
+  assert.match(r.out, /REFUSED[^\n]*i18n\/de\/skills\/demo\/SKILL\.md[^\n]*exit 2/);
+  assert.equal(existsSync(join(dir, 'i18n/de/skills/demo/SKILL.md')), false);
+});
+
 test('translate-content.sh refuses and removes a target the fence-parity check rejects (#475 guard)', (t) => {
   const dir = fixture(t, ['demo']);
   // Corrupt the copy's output inside the ```yaml fence, right after the column-0 `name:` line.
