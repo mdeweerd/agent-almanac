@@ -992,6 +992,25 @@ describe('npm package root (#606)', () => {
     assert.equal(withFakeHome(() => resolver.detectAlmanacRoot(outside, { packageRoot: pkgRoot })), pkgRoot);
   });
 
+  // The fallback is tried LAST, so a checkout that an earlier strategy finds
+  // still wins over the package. The test above is the control: with nothing
+  // earlier to find, pkgRoot alone answers. Both assertions are needed. From
+  // the checkout itself, strategy 1 answers, which catches the fallback moved
+  // first. From a subdirectory, strategies 1-3 all miss and only the walk-up
+  // (4) finds it, which catches the fallback moved to any place before 4; the
+  // first assertion alone lets that mutant survive (review round 1, F3).
+  it('a checkout found by an earlier strategy beats the package root', () => {
+    const checkout = resolve(tmpRoot, 'checkout-like');
+    const sub = resolve(checkout, 'deep/er');
+    mkdirSync(resolve(checkout, 'skills'), { recursive: true });
+    mkdirSync(sub, { recursive: true });
+    writeFileSync(resolve(checkout, 'skills/_registry.yml'), 'total_skills: 0\ndomains: {}\n');
+    assert.equal(withFakeHome(() => resolver.detectAlmanacRoot(checkout, { packageRoot: pkgRoot })), checkout,
+      'strategy 1 (cwd holds the registry) must beat the package fallback');
+    assert.equal(withFakeHome(() => resolver.detectAlmanacRoot(sub, { packageRoot: pkgRoot })), checkout,
+      'strategy 4 (walk up from cwd) must beat the package fallback');
+  });
+
   for (const args of [['list'], ['list', '--installed', '-g'], ['audit']]) {
     it(`${args.join(' ')} runs from outside any checkout`, () => {
       const { status, stdout, stderr } = spawnCli(args, outside);
@@ -1032,6 +1051,23 @@ describe('npm package root (#606)', () => {
     symlinkSync(pkgRoot, alias);
     assert.equal(resolver.isNpmPackageRoot(alias), true);
     assert.equal(resolver.isNpmPackageRoot(ROOT), false);
+  });
+
+  // The other direction, and the shape `npm link` makes: a path inside
+  // node_modules that is a symlink to a directory outside any node_modules.
+  // Links an install makes point at the spelling given, so they would run
+  // through node_modules and dangle once npm removes that symlink. Only the
+  // path as given can recognise it; the control proves its real path cannot,
+  // so the test cannot pass on the real-path arm (review round 1, F4).
+  it('recognises an npm-link-shaped package path whose target is outside node_modules', () => {
+    const linkedClone = resolve(tmpRoot, 'linked-clone');
+    mkdirSync(linkedClone, { recursive: true });
+    const linkedPkg = resolve(tmpRoot, 'linkprefix/lib/node_modules/agent-almanac');
+    mkdirSync(dirname(linkedPkg), { recursive: true });
+    symlinkSync(linkedClone, linkedPkg);
+    // Control: only the given spelling can answer true.
+    assert.equal(realpathSync(linkedPkg).split(/[\\/]+/).includes('node_modules'), false, realpathSync(linkedPkg));
+    assert.equal(resolver.isNpmPackageRoot(linkedPkg), true);
   });
 
   // ── install from a package root ──
