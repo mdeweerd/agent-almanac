@@ -1039,6 +1039,20 @@ describe('npm package root (#606)', () => {
     assert.ok(stderr.includes(refusal(pkgRoot)), `refusal text missing from stderr:\n${stderr}`);
   });
 
+  // A dry run refuses too: it exists to predict the real run, and a preview
+  // listing node_modules links the real run would then refuse to make would be
+  // the #607 misdirection. cli/README.md and guardPackageRoot()'s docstring both
+  // promise this, so it is pinned rather than left as prose.
+  it('a dry run from a package root refuses too', () => {
+    const dir = project('refuse-dry-run');
+    const { status, stdout, stderr } = spawnCli(
+      ['install', 'commit-changes', '--source', pkgRoot, '--dry-run'], dir);
+    assert.equal(status, 1, `exit ${status}\n${stdout}\n${stderr}`);
+    assert.ok(stderr.includes(refusal(pkgRoot)), `refusal text missing from stderr:\n${stderr}`);
+    assert.doesNotMatch(stdout, /DRY RUN/);
+    assert.deepEqual(linksIntoNodeModules(dir), []);
+  });
+
   it('with --from-package link, install links into the package and warns', () => {
     const dir = project('link-install');
     const { status, stdout, stderr } = spawnCli(
