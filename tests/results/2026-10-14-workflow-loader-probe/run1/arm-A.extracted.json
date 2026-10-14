@@ -1,0 +1,22 @@
+{
+  "init_has_workflow_tool": true,
+  "init_probe_slash_commands": [
+    "probe-arm-a"
+  ],
+  "event_count": 20,
+  "workflow_tool_uses": [
+    {
+      "id": "toolu_01PqSGSQ1BkRFmLnzKNL4JZX",
+      "input": {
+        "name": "probe-arm-a"
+      }
+    }
+  ],
+  "workflow_tool_results": [
+    {
+      "tool_use_id": "toolu_01PqSGSQ1BkRFmLnzKNL4JZX",
+      "is_error": false,
+      "text": "Workflow launched in background. Task ID: w9hcqvb10\nSummary: loader probe, no agents\nTranscript dir: ~/.claude/projects/-tmp-claude-1000--mnt-d-dev-p-agent-almanac-101070ad-c454-4f29-b0df-f2453415c5c0-scratchpad-lanes-s3g-run1-arm-A/ac089113-0360-4a54-9951-5be440dcca58/subagents/workflows/wf_5a4fe9ae-e11\nScript file: ~/.claude/projects/-tmp-claude-1000--mnt-d-dev-p-agent-almanac-101070ad-c454-4f29-b0df-f2453415c5c0-scratchpad-lanes-s3g-run1-arm-A/ac089113-0360-4a54-9951-5be440dcca58/workflows/scripts/probe-arm-a-wf_5a4fe9ae-e11.js\n(Edit this file with Write/Edit and re-invoke Workflow with {scriptPath: \"~/.claude/projects/-tmp-claude-1000--mnt-d-dev-p-agent-almanac-101070ad-c454-4f29-b0df-f2453415c5c0-scratchpad-lanes-s3g-run1-arm-A/ac089113-0360-4a54-9951-5be440dcca58/workflows/scripts/probe-arm-a-wf_5a4fe9ae-e11.js\"} to iterate without resending the script.)\nRun ID: wf_5a4fe9ae-e11\nTo resume after editing the script: Workflow({scriptPath: \"~/.claude/projects/-tmp-claude-1000--mnt-d-dev-p-agent-almanac-101070ad-c454-4f29-b0df-f2453415c5c0-scratchpad-lanes-s3g-run1-arm-A/ac089113-0360-4a54-9951-5be440dcca58/workflows/scripts/probe-arm-a-wf_5a4fe9ae-e11.js\", resumeFromRunId: \"wf_5a4fe9ae-e11\"}) — completed agents return cached results (cached results may themselves be empty — inspect journal.jsonl before assuming there is something to recover).\n\nYou will be notified when it completes. Use /workflows to watch live progress."
+    }
+  ]
+}
