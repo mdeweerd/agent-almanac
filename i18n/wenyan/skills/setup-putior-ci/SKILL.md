@@ -19,7 +19,8 @@ metadata:
   tags: putior, ci-cd, github-actions, automation, mermaid, diagram
   locale: wenyan
   source_locale: en
-  source_commit: 82c77053
+  source_commit: "ed7bf8543"
+  fence_basis_commit: "ed7bf8543"
   translator: "(untranslated stub)"
   translation_date: "2026-04-19"
 ---
