@@ -16,5 +16,10 @@
       "is_error": true,
       "text": "<tool_use_error>Workflow \"probe-arm-b\" not found. Available: deep-research</tool_use_error>"
     }
-  ]
+  ],
+  "init_slash_command_count": 445,
+  "init_slash_commands_starting_probe": [
+    "probe-feature-flag-state"
+  ],
+  "task_status": []
 }
