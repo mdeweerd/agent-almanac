@@ -288,7 +288,7 @@ test('the artifact paragraph does not offer a version check as evidence of match
   // differed (#970 review F1: at 3709a294d, cli/ unchanged since v1.3.0 and 438 other shipped
   // files changed). The negated `!skills/_template/` is deliberately not rendered.
   assert.ok(
-    paragraph.includes('`git diff v0.0.1 HEAD -- skills/ cli/ package.json`'),
+    paragraph.includes('`git diff v0.0.1 HEAD -- :/skills/ :/cli/ :/package.json`'),
     `the artifact paragraph does not compare the whole shipped set plus package.json at the declared version:\n${paragraph}`,
   );
 });
