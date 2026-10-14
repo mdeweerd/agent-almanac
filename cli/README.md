@@ -154,7 +154,8 @@ When the root found is the npm package itself (a directory inside
 included. npm says nothing about links it did not make: `npm uninstall`
 removes that directory and every link into it dangles; `npm update` replaces
 it, so the links either follow the new version silently or, in a
-version-keyed layout (npm `install-strategy=linked`, pnpm), break. There are
+version-keyed layout (npm `install-strategy=linked`, measured; pnpm, by
+inference), break. There are
 two ways forward:
 
 ```bash

@@ -124,7 +124,8 @@ function fromPackageOption() {
  * break them or silently change the content under them: under npm's default
  * layout the package is recreated at the same path, so the links follow the new
  * version without a word; under a version-keyed layout (npm
- * `install-strategy=linked`, pnpm) the old directory is pruned and they break.
+ * `install-strategy=linked`, measured; pnpm, by inference) the old directory is
+ * pruned and they break.
  * npm says nothing about links it did not make, and `audit` reports only the
  * ones that broke. So the default is to stop and
  * name both ways forward. Every adapter is covered,
