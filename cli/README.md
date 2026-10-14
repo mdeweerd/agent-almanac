@@ -123,11 +123,36 @@ Campfire state is stored in `.agent-almanac/state.json` in your current working 
 
 ### Running from Another Project
 
-The CLI auto-detects the almanac root by following `.claude/skills/` symlinks. If running from a directory without symlinks, pass the path explicitly:
+The CLI looks for the almanac root in this order: the current directory, the
+`.claude/skills/` symlinks in the project and then in your home directory, the
+current directory's parents, and last the package the CLI itself ships in. So
+an npm-installed CLI finds its own content from any directory: `list`,
+`search`, `audit`, `campfire` and `list --installed` need no clone. To use a
+particular checkout instead, pass it explicitly:
 
 ```bash
 agent-almanac campfire --all --source /path/to/agent-almanac
 ```
+
+### Installing from the npm package
+
+When the root found is the npm package itself (a directory inside
+`node_modules`), `install`, `gather` and `sync` refuse by default, dry runs
+included. `npm update` and `npm uninstall` replace or remove that directory,
+and every link into it would then break without a word. There are two ways
+forward:
+
+```bash
+# From a clone: the links point at a directory you control
+git clone https://github.com/pjt222/agent-almanac.git ~/agent-almanac
+agent-almanac install commit-changes --source ~/agent-almanac
+
+# Or link into the npm package anyway, and audit after every npm update
+agent-almanac install commit-changes --from-package link
+agent-almanac audit    # reports the links that broke, and exits 3 if any did
+```
+
+`--from-package` currently accepts only `link`; any other value is rejected.
 
 ## Campfire Architecture
 
