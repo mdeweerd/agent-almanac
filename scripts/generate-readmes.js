@@ -890,6 +890,20 @@ export function generateSecuritySurface({ root = ROOT } = {}) {
   // every shipped bullet, which is the multi-site drift class this repository keeps paying
   // for elsewhere.
   //
+  // The tag comparison has that same scope: its pathspec is the `files` entries this sentence
+  // prints, plus `package.json`, which npm packs whatever `files` says. A first revision
+  // compared `-- cli/` alone, and that passes exactly when it misleads, which is the #696
+  // defect again (#970 review F1): at 3709a294d (2026-06-15) `package.json` read 1.3.0, npm's
+  // newest publish was 1.3.0, `git diff v1.3.0 3709a294d -- cli/` was empty, and the other
+  // shipped trees differed in 438 files. `package.json` belongs in it for two reasons. It
+  // carries the runtime dependency ranges: at 4c92ff487 `commander` had moved from ^14.0.3 to
+  // ^15.0.0 under a byte-identical `cli/`. And an entry dropped from `files` shows in no tree's
+  // diff, only in that file's. The pathspec is read from `package.json`, not from git, so the
+  // sentence stays static. The `!…` negations are NOT rendered as `:!` pathspecs, because an
+  // unquoted `!` is history-expanded in interactive bash and zsh. So an edit confined to a
+  // negated `_template` reports a mismatch while the shipped files match. That error is
+  // conservative, which is the safe direction for a security document.
+  //
   // It enumerates FILES as well as directories. An earlier version filtered `files` to
   // entries ending in `/`, which silently dropped `cli/index.js` — the file
   // `npx agent-almanac` executes — so the sentence told a researcher that a vulnerability
@@ -950,7 +964,7 @@ export function generateSecuritySurface({ root = ROOT } = {}) {
   const toolsSkipped = toolRows.length - toolsInCi;
 
   return [
-    `**Which artifact this describes.** Everything below is derived from **the repository at this revision**, whose \`package.json\` declares version \`${pkg.version ?? '(unset)'}\`. That is not necessarily what \`npm install ${pkg.name ?? '(unnamed)'}\` installs, and a matching version number is not evidence of matching content: this tree can change after a version is published without its version changing. If the copy you have is also \`${pkg.version ?? '(unset)'}\`, compare this tree with that release's tag — \`git diff v${pkg.version ?? '(unset)'} HEAD -- cli/\` — and take an empty diff, not an equal version, as the evidence that the two match. What ships, from \`package.json\`'s own \`files\`: ${shippedList.map((t) => `\`${t}\``).join(', ')}. \`package.json\` ships too — npm always includes it — and it declares no \`preinstall\`/\`install\`/\`postinstall\` hooks, so nothing here executes on install.${packHookClause} Everything else described below (${REPO_ONLY.map((d) => `\`${d}/\``).join(', ')}) exists only in the repository. A vulnerability report against an npm-installed copy is in scope for the shipped list, and may be against older code than this document describes.`,
+    `**Which artifact this describes.** Everything below is derived from **the repository at this revision**, whose \`package.json\` declares version \`${pkg.version ?? '(unset)'}\`. That is not necessarily what \`npm install ${pkg.name ?? '(unnamed)'}\` installs, and a matching version number is not evidence of matching content: this tree can change after a version is published without its version changing. If the copy you have is also \`${pkg.version ?? '(unset)'}\`, compare this tree with that release's tag — \`git diff v${pkg.version ?? '(unset)'} HEAD -- ${[...shippedList, 'package.json'].join(' ')}\` — and take an empty diff, not an equal version, as the evidence that the two match. What ships, from \`package.json\`'s own \`files\`: ${shippedList.map((t) => `\`${t}\``).join(', ')}. \`package.json\` ships too — npm always includes it — and it declares no \`preinstall\`/\`install\`/\`postinstall\` hooks, so nothing here executes on install.${packHookClause} Everything else described below (${REPO_ONLY.map((d) => `\`${d}/\``).join(', ')}) exists only in the repository. A vulnerability report against an npm-installed copy is in scope for the shipped list, and may be against older code than this document describes.`,
     '',
     `- **${treeLabel}**: ${nonDoc.length === 0 ? 'Markdown and YAML only' : `mostly Markdown and YAML, plus **${nonDoc.length} files that are not** (${nonDocExtensions.join(', ')})${executable.length ? ` — ${executable.length === 1 ? 'one of them an executable script, ' : `${executable.length} of them executable scripts: `}${executable.map((f) => `\`${f}\``).join(', ')}` : ''}`}. All of it ships — counted from the index, which is what the next commit will contain and what a release is packed from; a local \`npm pack\` packs the working tree instead and can include files this count excludes. ${declaring} of ${ids.length} skills (~${share}%) declare \`Bash\` in their \`allowed-tools\`, meaning they instruct AI agents to execute shell commands when followed. Review any skill before letting an agent execute it.`,
     '- **Visualization pipeline** (`viz/`): A containerized R + Node.js + Vite build system with a Dockerfile, shell scripts, and an icon rendering pipeline. The Docker entrypoint serves content via a Python HTTP server.',

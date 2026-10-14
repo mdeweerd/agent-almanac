@@ -282,10 +282,14 @@ test('the artifact paragraph does not offer a version check as evidence of match
   );
   assert.match(paragraph, /a matching version number is not evidence of matching content/);
   // The comparison it points to instead, at the version `package.json` declares — that is the
-  // matching-version case, the one the number cannot settle.
+  // matching-version case, the one the number cannot settle. Its pathspec is the fixture's
+  // included `files` entries plus `package.json`, the scope the paragraph claims. `-- cli/`
+  // alone was the first revision, and it reported a match while every other shipped tree
+  // differed (#970 review F1: at 3709a294d, cli/ unchanged since v1.3.0 and 438 other shipped
+  // files changed). The negated `!skills/_template/` is deliberately not rendered.
   assert.ok(
-    paragraph.includes('`git diff v0.0.1 HEAD -- cli/`'),
-    `the artifact paragraph names no tag comparison for the declared version:\n${paragraph}`,
+    paragraph.includes('`git diff v0.0.1 HEAD -- skills/ cli/ package.json`'),
+    `the artifact paragraph does not compare the whole shipped set plus package.json at the declared version:\n${paragraph}`,
   );
 });
 
