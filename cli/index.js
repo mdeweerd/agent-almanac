@@ -120,9 +120,13 @@ function fromPackageOption() {
  * run included, since a dry run exists to predict the real one.
  * One body, so the refusal, the warning and the parameter each live on one line.
  *
- * Links into node_modules break when npm replaces or removes the package, and
- * npm says nothing about links it did not make: they surface later as skills
- * that vanished, unless someone runs `audit`. So the default is to stop and
+ * `npm uninstall` leaves links into node_modules dangling, and `npm update` can
+ * break them or silently change the content under them: under npm's default
+ * layout the package is recreated at the same path, so the links follow the new
+ * version without a word; under a version-keyed layout (npm
+ * `install-strategy=linked`, pnpm) the old directory is pruned and they break.
+ * npm says nothing about links it did not make, and `audit` reports only the
+ * ones that broke. So the default is to stop and
  * name both ways forward. Every adapter is covered,
  * including the few that write files rather than links, because which adapters
  * run depends on what is detected in the project, not on anything the user
@@ -135,14 +139,17 @@ function guardPackageRoot(ctx, options) {
   if (!isNpmPackageRoot(ctx.almanacRoot)) return;
   const mode = options.fromPackage;
   if (mode !== 'link') refusePackageRoot(ctx.almanacRoot);
-  reporter.warn(`Linking into the npm package at ${ctx.almanacRoot}. \`npm update\` or \`npm uninstall\` of agent-almanac can break these links; \`agent-almanac audit\` reports any that broke.`);
+  // stderr, like the refusal, not reporter.warn(): on stdout this line would
+  // precede `gather --json`'s document and make it unparseable. Only this
+  // warning moves; reporter.warn() stays on stdout for its other callers.
+  console.error(reporter.chalk.yellow(`  WARN: Linking into the npm package at ${ctx.almanacRoot}. \`npm update\` or \`npm uninstall\` of agent-almanac can break these links; \`agent-almanac audit\` reports any that broke.`));
 }
 
 /** Print the refusal and exit 1, the code getContext() uses for a root it cannot use. */
 function refusePackageRoot(root) {
   reporter.error(
-    `Not installing from the npm package at ${root}: links into node_modules break when `
-      + '`npm update` or `npm uninstall` replaces or removes it.\n'
+    `Not installing from the npm package at ${root}: \`npm uninstall\` leaves links into node_modules `
+      + 'dangling, and `npm update` can break them or silently change the content under them.\n'
       + '    Either install from a clone:      --source <clone>\n'
       + '    or link into the package anyway:  --from-package link',
   );

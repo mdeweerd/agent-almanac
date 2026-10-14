@@ -828,8 +828,8 @@ describe('audit exit codes end to end (#439)', () => {
 // (`npm install -g agent-almanac`, then `agent-almanac install …`) failed at its
 // third line for every npm user. The fallback fixes that and opens a second
 // problem, decided by the maintainer on 2026-10-14: installing FROM a package
-// root links into node_modules, which `npm update` and `npm uninstall` replace
-// or remove. So every command that installs refuses by default, naming both
+// root links into node_modules, which `npm uninstall` removes and `npm update`
+// may replace. So every command that installs refuses by default, naming both
 // ways forward, and `--from-package link` opts in.
 //
 // HOME is redirected for every case, in-process and spawned. Strategy 3 traces
@@ -856,9 +856,15 @@ describe('npm package root (#606)', () => {
 
   // Pinned literally (#606). Both ways forward must be named, and the wording
   // is behaviour: a change to it should go red here and be made on purpose.
+  // Each npm command is named with what it does to the links, as measured in
+  // review round 1: `npm uninstall` leaves them dangling; `npm update` leaves
+  // them resolving to the new version's content under npm's default layout and
+  // breaks them under a version-keyed one (`install-strategy=linked`), so it
+  // "can" break them and is not said to.
   const refusal = (root) =>
-    `ERROR: Not installing from the npm package at ${root}: links into node_modules ` +
-    'break when `npm update` or `npm uninstall` replaces or removes it.\n' +
+    `ERROR: Not installing from the npm package at ${root}: \`npm uninstall\` leaves ` +
+    'links into node_modules dangling, and `npm update` can break them or silently ' +
+    'change the content under them.\n' +
     '    Either install from a clone:      --source <clone>\n' +
     '    or link into the package anyway:  --from-package link';
   const linkWarning = (root) =>
@@ -1058,7 +1064,10 @@ describe('npm package root (#606)', () => {
     const { status, stdout, stderr } = spawnCli(
       ['install', 'commit-changes', '--source', pkgRoot, '--from-package', 'link'], dir);
     assert.equal(status, 0, `exit ${status}\n${stdout}\n${stderr}`);
-    assert.ok(stdout.includes(linkWarning(pkgRoot)), `link warning missing from stdout:\n${stdout}`);
+    // stderr, like the refusal: on stdout it would precede `gather --json`'s
+    // document and make it unparseable (review round 1, F2).
+    assert.ok(stderr.includes(linkWarning(pkgRoot)), `link warning missing from stderr:\n${stderr}`);
+    assert.ok(!stdout.includes('Linking into the npm package'), `link warning leaked to stdout:\n${stdout}`);
     for (const link of ['.agents/skills/commit-changes', '.claude/skills/commit-changes']) {
       const linkPath = resolve(dir, link);
       assert.ok(existsSync(linkPath), `${link} was not created or does not resolve`);
@@ -1093,6 +1102,21 @@ describe('npm package root (#606)', () => {
     assert.deepEqual(linksIntoNodeModules(dir), [], `links into node_modules were created:\n${stdout}`);
     assert.equal(status, 1, `exit ${status}\n${stdout}\n${stderr}`);
     assert.ok(stderr.includes(refusal(pkgRoot)), `refusal text missing from stderr:\n${stderr}`);
+  });
+
+  // `--from-package link` is the documented way to keep the old behaviour, so it
+  // must not break the one machine-readable output among the gated commands.
+  // The project has only `.claude/`, whose adapters print no installer warnings,
+  // so any stdout pollution here is the link warning's.
+  it('gather --json --from-package link keeps stdout a JSON document and warns on stderr', () => {
+    const dir = project('link-gather-json');
+    const { status, stdout, stderr } = spawnCli(
+      ['gather', 'fixture-team', '--json', '--source', pkgRoot, '--from-package', 'link'], dir);
+    assert.equal(status, 0, `exit ${status}\n${stdout}\n${stderr}`);
+    let doc;
+    assert.doesNotThrow(() => { doc = JSON.parse(stdout); }, `stdout is not one JSON document:\n${stdout}`);
+    assert.equal(doc.team, 'fixture-team');
+    assert.ok(stderr.includes(linkWarning(pkgRoot)), `link warning missing from stderr:\n${stderr}`);
   });
 
   it('sync refuses from a package root too', () => {
