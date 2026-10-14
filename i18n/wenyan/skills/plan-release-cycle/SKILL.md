@@ -3,7 +3,7 @@ name: plan-release-cycle
 locale: wenyan
 source_locale: en
 source_commit: 82c77053
-fence_basis_commit: 82c77053
+fence_basis_commit: 25a165bca
 translator: "Julius Brussee homage — caveman"
 translation_date: "2026-04-26"
 description: >
@@ -130,7 +130,7 @@ P0 功能阻發。P1 功能備則含。P2 功能延而不誤。
 
 定候選版如何生與試：
 
-```markdown
+````markdown
 ### Release Candidate Process
 
 1. **RC1 Tag**: Tag from the stabilization branch after all P0 features merged and CI green
@@ -158,7 +158,7 @@ P0 功能阻發。P1 功能備則含。P2 功能延而不誤。
    ```bash
    git tag -a v2.0.0-rc.2 -m "Release candidate 2 for v2.0.0"
    ```
-```text
+````
 
 得：RC 程序記之，附標籤慣、分發法、試清單、升報之準。
 
