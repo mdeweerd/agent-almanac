@@ -1,0 +1,3 @@
+export const meta = { name: 'probe-arm-a', description: 'loader probe, no agents' }
+log('PROBE_BODY_A_91c2')
+return { arm: 'probe-arm-a', body: 'a', marker: 'PROBE_BODY_A_91c2' }

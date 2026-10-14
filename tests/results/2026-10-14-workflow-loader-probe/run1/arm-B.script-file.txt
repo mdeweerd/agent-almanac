@@ -1,0 +1,1 @@
+(no Script file path in the tool_result, or the file is absent: '')
