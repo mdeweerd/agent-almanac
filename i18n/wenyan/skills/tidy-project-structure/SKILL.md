@@ -3,7 +3,7 @@ name: tidy-project-structure
 locale: wenyan
 source_locale: en
 source_commit: 82c77053
-fence_basis_commit: 82c77053
+fence_basis_commit: 25a165bca
 translator: "Julius Brussee homage — caveman"
 translation_date: "2026-05-03"
 description: >
@@ -162,7 +162,7 @@ markdown-link-check README.md
 5. 更版權之年
 
 **README 模板構**：
-```markdown
+````markdown
 # Project Name
 
 Brief description (1-2 sentences).
@@ -190,7 +190,7 @@ Link to CONTRIBUTING.md or inline guidelines.
 ## License
 
 LICENSE badge and link.
-```text
+````
 
 得：諸 README 已更；例已驗可行
 

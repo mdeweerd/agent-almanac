@@ -1,0 +1,8 @@
+date_utc: 2026-10-14T14:16:12Z
+claude_version: 2.1.299 (Claude Code)
+model: sonnet
+permission: dontAsk (+ --allowedTools Workflow)
+setting_sources: (flag not passed: default sources)
+keep_env: 0
+env_scrubbed_names: CLAUDE_CODE_CHILD_SESSION CLAUDE_CODE_SESSION_ID CLAUDE_PID CLAUDE_EFFORT CLAUDE_CODE_MESSAGING_SOCKET CLAUDECODE CLAUDE_CODE_SESSION_ATTENDED CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS CLAUDE_CODE_ENTRYPOINT CLAUDE_CODE_EXECPATH CLAUDE_CODE_MESSAGING_TOKEN
+outdir: /tmp/claude-1000/-mnt-d-dev-p-agent-almanac/101070ad-c454-4f29-b0df-f2453415c5c0/scratchpad/lanes/s3g/run1

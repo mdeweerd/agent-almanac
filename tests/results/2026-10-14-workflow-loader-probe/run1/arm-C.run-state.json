@@ -1,0 +1,14 @@
+[
+  {
+    "workflowName": "probe-arm-c",
+    "status": "completed",
+    "logs": [
+      "PROBE_BODY_c1_5e1d"
+    ],
+    "result": {
+      "arm": "probe-arm-c",
+      "body": "c1",
+      "marker": "PROBE_BODY_c1_5e1d"
+    }
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "init_has_workflow_tool": true,
+  "init_probe_slash_commands": [],
+  "event_count": 12,
+  "workflow_tool_uses": [
+    {
+      "id": "toolu_017gNVgEAeE2bUH6FA2WimCC",
+      "input": {
+        "name": "probe-arm-b"
+      }
+    }
+  ],
+  "workflow_tool_results": [
+    {
+      "tool_use_id": "toolu_017gNVgEAeE2bUH6FA2WimCC",
+      "is_error": true,
+      "text": "<tool_use_error>Workflow \"probe-arm-b\" not found. Available: deep-research</tool_use_error>"
+    }
+  ],
+  "init_slash_command_count": 445,
+  "init_slash_commands_starting_probe": [
+    "probe-feature-flag-state"
+  ],
+  "task_status": []
+}
