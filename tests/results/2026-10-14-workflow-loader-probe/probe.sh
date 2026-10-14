@@ -4,7 +4,10 @@
 #        bash probe.sh --reextract <outdir>     launch nothing: re-run ONLY the extraction, the
 #                                               run-state collection, the verdicts and the
 #                                               SUMMARY over an <outdir> a previous run filled,
-#                                               which must still hold its arm-*.stream.jsonl
+#                                               which must still hold its arm-*.stream.jsonl;
+#                                               run-state, script copies and transcript markers
+#                                               come from the runs' session directories under
+#                                               ~/.claude/projects, which must still exist
 #
 # Question: on the installed Claude Code, does the Workflow loader discover a
 # project workflow at .claude/workflows/<stem>.js, at <stem>.mjs, and do two .js
