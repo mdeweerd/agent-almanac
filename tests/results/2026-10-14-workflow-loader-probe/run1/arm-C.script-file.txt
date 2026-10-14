@@ -1,1 +1,1 @@
-~/.claude/projects/-tmp-claude-1000--mnt-d-dev-p-agent-almanac-101070ad-c454-4f29-b0df-f2453415c5c0-scratchpad-lanes-s3g-run1-arm-C/6df5a399-f089-4800-815e-a3a8e87a1b1e/workflows/scripts/probe-arm-c-wf_d081134d-2eb.js
+~/.claude/projects/<scratch-slug>/6df5a399-f089-4800-815e-a3a8e87a1b1e/workflows/scripts/probe-arm-c-wf_d081134d-2eb.js

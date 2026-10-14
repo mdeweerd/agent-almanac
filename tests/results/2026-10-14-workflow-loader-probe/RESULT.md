@@ -152,8 +152,14 @@ Finding 4 also corrects the namespacing advice at `create-workflow:171` and `:17
 
 Not committed: the raw `stream.jsonl` event logs. Their `init` events carry the operator's whole local environment (plugin list, 446 slash commands, agent definitions, a messaging socket path), which is not this repository's to publish. They are kept outside the repository with the session record.
 
-Redaction: `/home/<operator>` was rewritten to `~` in the derived files. A re-runner must do the same before committing new or re-extracted output (copy with `sed 's#/home/[a-z0-9_]*#~#g' src > dst`, never in place), then run `bash tools/check-redaction.sh` over every file to be committed. `probe.sh` does not redact.
+Redaction: `/home/<operator>` was rewritten to `~` in the derived files. The Claude Code project-store slug in every `~/.claude/projects/<slug>/…` path was rewritten to the placeholder `<scratch-slug>`. A re-runner must do both before committing new or re-extracted output, copying, never editing in place:
 
-- **Replacements.** 28 in all, re-counted after the re-extraction: 26 in the regenerated files and 2 in the files the re-extraction does not write.
-- **Scanner findings.** `tools/check-redaction.sh` over this file, `probe.sh` and every file under `run1/` and `run2/` (68 files) reports 14 findings, all `project-store-slug`. They are the `~/.claude/projects/<scratch-slug>/<uuid>/…` paths of the persisted script copies, in `SUMMARY.txt`, `extracted.json` and `script-file.txt`. This file, `probe.sh` and the `run-state.json` files are clean.
-- **Classification.** The findings were classified as evidence with no secret in them, as in `tests/results/2026-09-17-repo-safety-rm-audit/`.
+```bash
+sed -e 's#/home/[a-z0-9_]*#~#g' -e 's#\(claude/projects/\)-[^ /`"]*#\1<scratch-slug>#g' src > dst
+```
+
+Then run `node scripts/scan-skill-content.js` and `bash tools/check-redaction.sh` over every file to be committed. `probe.sh` does not redact (#971).
+
+- **Home paths.** 28 replacements in all, re-counted after the re-extraction: 26 in the regenerated files and 2 in the files the re-extraction does not write.
+- **Store slugs.** 26 replacements, in `SUMMARY.txt`, `extracted.json` and `script-file.txt`. A first commit classified these paths as harmless evidence. The repository's `content-security` CI job (`scripts/scan-skill-content.js`, rule `private-store-slug`) treats any slug other than this repository's own as a disclosure, default-deny, and reported all 26 as HIGH findings. So they were rewritten rather than argued.
+- **Scanners.** `node scripts/scan-skill-content.js` reports 0 findings. `tools/check-redaction.sh` over this file, `probe.sh` and every file under `run1/` and `run2/` (68 files) reports clean.
