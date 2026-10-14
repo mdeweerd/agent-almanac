@@ -56,7 +56,8 @@ const FIXTURE_DOMAINS = 2;
 const FIXTURE_AGENTS = 4;
 const FIXTURE_TEAMS = 3;
 
-function fixture(t, { pkg = { name: 'fixture-almanac', version: FIXTURE_VERSION } } = {}) {
+/** `replace` overwrites whole files after the defaults are written, so an arm can break one input. */
+function fixture(t, { pkg = { name: 'fixture-almanac', version: FIXTURE_VERSION }, replace = {} } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'plugin-manifest-'));
   t.after(() => rmTree(dir));
   write(dir, {
@@ -75,6 +76,7 @@ function fixture(t, { pkg = { name: 'fixture-almanac', version: FIXTURE_VERSION 
     'agents/_registry.yml': `total_agents: ${FIXTURE_AGENTS}\nagents: []\n`,
     'teams/_registry.yml': `total_teams: ${FIXTURE_TEAMS}\nteams: []\n`,
   });
+  write(dir, replace);
   return dir;
 }
 
@@ -117,6 +119,32 @@ test('MANAGED lists .claude-plugin/plugin.json, so check-readmes compares it and
   );
 });
 
+test('validate-readmes.yml triggers on package.json in BOTH events, because two outputs read it', () => {
+  // `package.json` is the one INPUT that validate-readmes.yml lists, against its own "outputs,
+  // not inputs" rule. Two writers read it: `generatePluginManifest` (its `version`) and
+  // `generateSecuritySurface` (`version`, `name`, `files`, the install and pack hooks). Listing
+  // it is what makes a version bump that skipped `npm run update-readmes` red on its own PR
+  // instead of at the tag's `npm test`.
+  //
+  // Integrity check A8c compares the two `paths:` blocks with each other and with MANAGED, so
+  // deleting the line from ONE block reddens it. Deleting it from BOTH leaves A8c green,
+  // because neither comparison knows about inputs (#970 review N1). This arm covers both cases.
+  const workflow = yaml.load(readFileSync(join(REPO_ROOT, '.github', 'workflows', 'validate-readmes.yml'), 'utf8'));
+  for (const event of ['push', 'pull_request']) {
+    const paths = workflow?.on?.[event]?.paths;
+    // The control. A parse that reached the wrong key fails here and names the parse, instead of
+    // reporting a missing package.json it never looked for.
+    assert.ok(
+      Array.isArray(paths) && paths.includes('SECURITY.md'),
+      `could not read on.${event}.paths of validate-readmes.yml as a list carrying SECURITY.md, got ${JSON.stringify(paths)}`,
+    );
+    assert.ok(
+      paths.includes('package.json'),
+      `validate-readmes.yml on.${event}.paths does not list package.json, so a version bump that skipped \`npm run update-readmes\` is not checked there (#749, #970 review N1)`,
+    );
+  }
+});
+
 test('the version is package.json\'s and the four totals are the registries\', read from the given root', async (t) => {
   const generatePluginManifest = await manifestWriter();
   const dir = fixture(t);
@@ -156,6 +184,30 @@ test('a package.json with no version is refused, not published as a manifest wit
   const generatePluginManifest = await manifestWriter();
   const dir = fixture(t, { pkg: { name: 'fixture-almanac' } });
   assert.throws(() => generatePluginManifest({ root: dir }), /package\.json declares no version/);
+});
+
+test('a registry with no integer total is refused, not published as "undefined agent personas"', async (t) => {
+  // The version's reason again. A template literal renders an absent total as `undefined` without
+  // a word, and check-readmes would go red only at the next regeneration, naming no cause. The
+  // refusal survived its mutant in the #970 review (N3), because no arm reached it.
+  const generatePluginManifest = await manifestWriter();
+  const dir = fixture(t, { replace: { 'agents/_registry.yml': 'agents: []\n' } });
+  assert.throws(
+    () => generatePluginManifest({ root: dir }),
+    /agents\/_registry\.yml carries no integer `total_agents`/,
+  );
+});
+
+test('a skills registry with no domains map is refused by name, not by a TypeError', async (t) => {
+  // Without the refusal, `Object.keys(undefined)` throws "Cannot convert undefined or null to
+  // object", which names neither the file nor the field. The domains guard runs before the
+  // `total_skills` read, so this registry, which keeps its total, reaches it.
+  const generatePluginManifest = await manifestWriter();
+  const dir = fixture(t, { replace: { 'skills/_registry.yml': `total_skills: ${FIXTURE_SKILLS}\n` } });
+  assert.throws(
+    () => generatePluginManifest({ root: dir }),
+    /skills\/_registry\.yml carries no `domains` map/,
+  );
 });
 
 test('LIVE: the default root is this repository', async () => {
