@@ -19,7 +19,7 @@ metadata:
   locale: zh-CN
   source_locale: en
   source_commit: 33b561c9
-  fence_basis_commit: 33b561c9
+  fence_basis_commit: 25a165bca
   translator: claude
   translation_date: "2026-03-17"
 ---
@@ -162,7 +162,7 @@ Fix broken links, update examples, add missing sections.
 5. Update copyright year
 
 **README template structure**:
-```markdown
+````markdown
 # Project Name
 
 Brief description (1-2 sentences).
@@ -190,7 +190,7 @@ Link to CONTRIBUTING.md or inline guidelines.
 ## License
 
 LICENSE badge and link.
-```text
+````
 
 **预期结果：** All READMEs updated; examples verified to run
 

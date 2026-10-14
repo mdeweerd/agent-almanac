@@ -20,7 +20,7 @@ metadata:
   locale: zh-CN
   source_locale: en
   source_commit: 33b561c9
-  fence_basis_commit: 33b561c9
+  fence_basis_commit: 25a165bca
   translator: claude
   translation_date: "2026-03-17"
 ---
@@ -134,7 +134,7 @@ P0 features block the release. P1 features should be included if ready. P2 featu
 
 Define how release candidates are produced and tested:
 
-```markdown
+````markdown
 ### Release Candidate Process
 
 1. **RC1 Tag**: Tag from the stabilization branch after all P0 features merged and CI green
@@ -162,7 +162,7 @@ Define how release candidates are produced and tested:
    ```bash
    git tag -a v2.0.0-rc.2 -m "Release candidate 2 for v2.0.0"
    ```
-```text
+````
 
 **预期结果：** RC process documented with tagging convention, distribution method, testing checklist, and escalation criteria.
 
