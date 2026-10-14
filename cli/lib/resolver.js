@@ -22,8 +22,13 @@ const OWN_PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', 
  * Auto-detect the almanac root directory.
  * Strategy:
  *   1. If cwd IS the almanac (has skills/_registry.yml), use it
- *   2. Follow .claude/skills/ symlinks to find the source
- *   3. Follow ~/.claude/skills/ symlinks
+ *   2. <cwd>/.claude/skills, when its own real path lies inside a checkout
+ *      (e.g. `.claude/skills -> <clone>/skills`). Only that directory's real
+ *      path is traced: the per-item links `install` creates
+ *      (`.claude/skills/<id>`, `.agents/skills/<id>`, …) are never followed,
+ *      nor is a hub of per-item links, so a project installed from a clone
+ *      falls through to 5 (#606 AC2).
+ *   3. ~/.claude/skills, by the same rule
  *   4. Walk up from cwd looking for skills/_registry.yml
  *   5. The package this CLI ships in (#606) — tried last, because it is the
  *      one answer that is always there: the npm tarball carries every skill,
@@ -87,8 +92,19 @@ export function detectAlmanacRoot(cwd = process.cwd(), { packageRoot = OWN_PACKA
  *
  * Signals rejected: the absence of `.git` (a GitHub zip download has none and is
  * a stable copy, not one npm will replace), and a `package.json` naming this
- * package (a clone has one too). Not recognised: a package manager that installs
- * outside any node_modules directory, such as Deno's npm cache.
+ * package (a clone has one too).
+ *
+ * Limits, stated rather than fixed:
+ *   - Not recognised: a package manager that installs outside any node_modules
+ *     directory, such as Deno's npm cache.
+ *   - Not recognised: a `Node_Modules` spelled in another case. The segment
+ *     match is case-sensitive and realpathSync() does not canonicalise case,
+ *     so on a case-insensitive filesystem (macOS, Windows) a hand-typed
+ *     `--source …/Node_Modules/agent-almanac` reaches the package unrefused
+ *     (reasoned from the code; not run, no such filesystem here).
+ *   - Refused although npm does not manage it: a clone that lives under a
+ *     directory literally named node_modules. `--from-package link` is its
+ *     only way through, and that warning about npm then does not apply.
  *
  * The path is tested as given AND as its real path. As given, because the links
  * an install makes point at that spelling: `--source <prefix>/lib/node_modules/agent-almanac`
